@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="${basepackage}.${modelName}.dao.${className}Mapper">
+    <sql id="table">
+        ${tableName}
+    </sql>
+    <sql id="sqlInsertColumns" >
+	    #foreach($entity in $entityList)#if($velocityCount==1)${entity.column}#else,${entity.column}#end#end
+  	</sql>
+  
+    <sql id="sqlInsertValues" >
+	    #foreach($entity in $entityList)#if($velocityCount==1)#{${entity.property}}#else,#{${entity.property}}#end#end
+    </sql>
+    
+    <sql id="sqlInsertListValues" >
+	    #foreach($entity in $entityList)#if($velocityCount==1)#{m.${entity.property}}#else,#{m.${entity.property}}#end#end
+    </sql>
+    
+    <sql id="sqlUpdateColumns" >
+        #foreach($entity in $entityList)#if(${entity.column}!=${pkName})#if($velocityCount==2)${entity.column}=#{${entity.property}}#else,${entity.column}=#{${entity.property}}#end#end#end
+    </sql>
+    
+    <sql id="sqlUpdateListColumns" >
+	    #foreach($entity in $entityList)#if(${entity.column}!=${pkName})#if($velocityCount==2)${entity.column}=#{m.${entity.property}}#else,${entity.column}= #{m.${entity.property}}#end#end#end
+    </sql>
+    
+    <sql id="sqlUpdateColumnsNotNull">
+    #foreach( $entity in $entityList)#if(${entity.column}!=${pkName})
+	<if test="${entity.property} != null">
+		${entity.column}= #{${entity.property}},
+		</if>
+	#end
+	#end
+    </sql>
+    
+    <sql id="sqlUpdateListColumnsNotNull">
+    #foreach( $entity in $entityList)#if(${entity.column}!=${pkName})
+	<if test="m.${entity.property} != null">
+		${entity.column}= #{m.${entity.property}},
+		</if>
+	#end
+	#end
+    </sql>
+    
+    <sql id="sqlSelectListByQuery">
+    	SELECT * FROM <include refid="table"/>
+   		<where>
+		#foreach($entity in $entityList)
+		<if test="${entity.property} != null and ${entity.property} != ''">
+		AND ${entity.column}=#{${entity.property}}
+		</if>
+		#end
+    	</where>
+    </sql>
+	
+    <!-- 结果映射 -->
+    <resultMap type="${className}" id="mapModel">
+    	<id column="id" property="id"/>
+    #foreach($entity in $entityList)#if(${entity.column}!=${pkName})
+ 	<result column="${entity.column}" property="${entity.property}" />
+ 	#end
+ 	#end
+ 	</resultMap>
+
+
+    <!-- 根据id查询 -->
+    <select id="selectModelById" parameterType="String" resultMap="mapModel">
+        SELECT * FROM <include refid="table"/> WHERE id = #{id}
+    </select>
+
+    <!-- 查询所有 -->
+    <select id="selectList" resultMap="mapModel">
+        SELECT * FROM <include refid="table"/> ORDER BY id DESC
+    </select>
+
+    <!-- 查询：字典 -->
+    <select id="selectListByMap" parameterType="java.util.Map" resultMap="mapModel">
+        SELECT * FROM <include refid="table"/>
+        <where>
+            <choose>
+                <when test="ids != null">
+                    Id IN
+                    <trim prefix="(" suffix=")" suffixOverrides=",">
+                        <foreach collection="ids" item="itemId" separator=",">
+                            #{itemId}
+                        </foreach>
+                    </trim>
+                </when>
+                <when test="id != null">
+                    Id = #{id}
+                </when>
+                <otherwise>
+                    <if test="sqlWhere != null">${sqlWhere}</if>
+                </otherwise>
+            </choose>
+        </where>
+        <if test="sqlOrderBy != null and sqlOrderBy != ''">ORDER BY ${sqlOrderBy}</if>
+    </select>
+    <!-- 查询：自定义条件 -->
+    <select id="selectListByWhere" parameterType="java.util.Map" resultMap="mapModel">
+        SELECT * FROM <include refid="table"/>
+        <where>
+            <if test="sqlWhere != null">AND ${sqlWhere}</if>
+        </where>
+        <if test="sqlOrderBy != null and sqlOrderBy != ''">ORDER BY ${sqlOrderBy}</if>
+    </select>
+    <!-- 查询：指定Ids -->
+    <select id="selectListByIds" parameterType="arraylist" resultMap="mapModel">
+        SELECT * FROM <include refid="table"/>
+        WHERE Id IN
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <foreach collection="list" item="id" separator=",">
+                #{id}
+            </foreach>
+        </trim>
+        ORDER BY Id
+    </select>
+
+    <!-- 查询：对象分页 -->
+    <select id="selectListByQuery" parameterType="In${className}" resultMap="mapModel">
+        <include refid="sqlSelectListByQuery"/>
+        ORDER BY id DESC
+        <if test="index != null and size != null">
+            LIMIT #{index},#{pageSize}
+        </if>
+    </select>
+    <select id="selectCountByQuery" parameterType="In${className}" resultType="int">
+        SELECT COUNT(*) Count FROM (
+        <include refid="sqlSelectListByQuery"/>
+        ) t
+    </select>
+    <!-- 查询：数量 -->
+    <select id="selectCount" resultType="int">
+        SELECT COUNT(*) FROM <include refid="table"/>
+    </select>
+    <select id="selectCountByMap" parameterType="java.util.Map" resultType="int">
+        SELECT COUNT(*) FROM <include refid="table"/>
+        <where>
+            <if test="id != null">
+                AND Id = #{id}
+            </if>
+            <if test="sqlWhere != null">
+                AND ${sqlWhere}
+            </if>
+        </where>
+    </select>
+    <!-- 新增 -->
+
+    <!-- 新增：单个 -->
+    <insert id="insert" parameterType="${className}">
+        INSERT INTO <include refid="table"/> ( <include refid="sqlInsertColumns"/> )
+        VALUES(<include refid="sqlInsertValues"/>)
+    </insert>
+    <!-- 新增：批量 -->
+    <insert id="insertList" parameterType="arraylist">
+        INSERT INTO <include refid="table"/> ( <include refid="sqlInsertColumns"/> )
+        <!-- collection可以是List对于list,数组对于array,Map对应ids -->
+        <foreach collection="list" item="m" index="index" separator="union all">
+            SELECT <include refid="sqlInsertListValues"/>
+
+            FROM dual
+        </foreach>
+    </insert>
+
+    <!-- 修改 -->
+    <!-- 修改：单个 -->
+    <update id="update" parameterType="${className}">
+        UPDATE <include refid="table"/>
+        <set>
+            <!-- 根据实体更新增加、修改属性 -->
+            <include refid="sqlUpdateColumns"/>
+        </set>
+        WHERE Id=#{id}
+    </update>
+    <!-- 修改：批量 -->
+    <update id="updateList" parameterType="arraylist">
+        <foreach collection="list" item="m" separator=";">
+            UPDATE <include refid="table"/>
+            <set>
+                <!-- 根据实体更新增加、修改属性 -->
+                <include refid="sqlUpdateListColumns"/>
+
+            </set>
+            <where>
+                Id=#{m.id}
+            </where>
+        </foreach>
+    </update>
+    <!-- 修改：按非空条件 -->
+    <update id="updateNotNull" parameterType="${className}">
+        UPDATE <include refid="table"/>
+        <set>
+            <!-- 根据实体更新增加、修改属性 -->
+            <include refid="sqlUpdateColumnsNotNull"/>
+        </set>
+        <where>
+            id=#{id}
+        </where>
+    </update>
+
+    <!-- 修改：批量，按非空条件 -->
+    <update id="updateListNotNull" parameterType="arraylist">
+        <foreach collection="list" item="m" separator=";">
+            UPDATE <include refid="table"/>
+            <set>
+                <!-- 根据实体更新增加、修改属性 -->
+                <include refid="sqlUpdateListColumnsNotNull"/>
+            </set>
+            <where>
+                Id=#{m.id}
+            </where>
+        </foreach>
+    </update>
+    <!-- 修改：按sqlWhere条件 -->
+    <update id="updateByMap" parameterType="java.util.Map">
+        UPDATE <include refid="table"/>
+        <set>
+            <!-- 根据实体更新增加、修改属性 -->
+            <include refid="sqlUpdateColumnsNotNull"/>
+        </set>
+
+        <where>
+            <choose>
+                <when test="sqlWhere != null">
+                    AND ${sqlWhere}
+                </when>
+                <otherwise>
+                    AND 1 !=1
+                </otherwise>
+            </choose>
+        </where>
+    </update>
+
+
+    <!-- 删除 -->
+    <!-- 删除：单个 -->
+    <delete id="deleteById" parameterType="String">
+        DELETE FROM <include refid="table"/> WHERE Id=#{id}
+    </delete>
+
+    <!-- 删除：批量Id -->
+    <delete id="deleteByIds">
+        DELETE FROM <include refid="table"/> WHERE Id IN
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <foreach collection="list" item="id" separator=",">
+                #{id}
+            </foreach>
+        </trim>
+    </delete>
+    <!-- 删除：按sqlWhere条件-->
+    <delete id="deleteByMap" parameterType="java.util.Map">
+        DELETE FROM <include refid="table"/>
+        <where>
+            <choose>
+                <when test="sqlWhere != null">
+                    ${sqlWhere}
+                </when>
+                <otherwise>
+                    1 != 1
+                </otherwise>
+            </choose>
+        </where>
+    </delete>
+
+    <!-- 是否存在 -->
+    <!-- 是否存在：指定Id -->
+    <select id="selectExistsById" parameterType="String" resultType="Boolean">
+        SELECT EXISTS (SELECT 1 FROM <include refid="table"/> WHERE Id=#{id}) result
+    </select>
+    <!-- 是否都存在：多个Id -->
+    <select id="selectAllExistsByIds" resultType="int">
+        SELECT COUNT(1) result
+        FROM <include refid="table"/> WHERE Id IN
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <foreach collection="list" item="id" separator=",">
+                #{id}
+            </foreach>
+        </trim>
+    </select>
+
+    <!-- end -->
+
+</mapper>

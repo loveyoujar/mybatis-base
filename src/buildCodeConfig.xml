@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<properties>
+	<!-- 基础包名称 -->
+	<entry key="basepackage">com.ltq.demo</entry>
+
+	<!--模块名称 -->
+	<entry key="modelName">User</entry>
+
+	<!--项目名称 -->
+	<entry key="projectName">demo</entry>
+
+	<!-- 类作者 -->
+	<entry key="author">admin</entry>
+
+	<!-- 类描述 -->
+	<entry key="describe">用户信息</entry>
+
+	<!-- 创建时间 -->
+	<entry key="createtime">2019年9月22日</entry>
+
+	<!-- 类名称 -->
+	<entry key="className">User</entry>
+
+
+
+	<!-- 表名称<config_table中的key> -->
+	<entry key="tableName">user</entry>
+
+	<!-- 表主键列名称 -->
+	<entry key="pkName">id</entry>
+
+	<!-- 数据库名称 -->
+	<entry key="dataBaseName">user</entry>
+
+	<!-- 数据库驱动 -->
+	<entry key="jdbc_driver">com.mysql.jdbc.Driver</entry>
+
+	<!-- 数据库URL -->
+	<entry key="jdbc_url">jdbc:mysql://127.0.0.1:3306/user?useUnicode=true&amp;characterEncoding=UTF-8</entry>
+	
+	<!-- 用户名 -->
+	<entry key="jdbc_username">root</entry>
+
+	<!-- 密码 -->
+	<entry key="jdbc_password">123456</entry>
+
+	<!-- 输出根目录 -->
+	<entry key="outRoot">./generator-output</entry>
+</properties>

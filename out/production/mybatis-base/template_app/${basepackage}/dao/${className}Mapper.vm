@@ -1,0 +1,16 @@
+package ${basepackage}.${modelName}.dao;
+
+import ${basepackage}.${modelName}.entity.${className};
+import ${basepackage}.${modelName}.entity.in.In${className};
+import com.ltq.demo.core.MybatisDao;
+
+/**
+ * 数据访问接口
+ * @author ${author}
+ * @since ${createtime}
+ */
+public interface ${className}Mapper extends MybatisDao<${className},In${className},Integer> {
+
+
+
+}
